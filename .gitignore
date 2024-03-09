@@ -2,6 +2,7 @@
 ###########
 # draft tools in development
 agate/draft/
+agate/settings/secret
 
 # MATLAB #
 ##########
@@ -9,7 +10,7 @@ agate/draft/
 *.mat
 # configuration files
 *.cnf
-!basestation.cnf
+!basestation_example.cnf
 !agate_config_example.cnf
 !pmarConvert_example.cnf
 !wisprConvert_example.cnf
