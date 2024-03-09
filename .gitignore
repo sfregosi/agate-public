@@ -1,19 +1,30 @@
 # FOLDERS #
 ###########
 # draft tools in development
-agate/draft/
-agate/settings/secret
+agate/draft/*
+!README-draft.md
+# personal settings files kept locally only
+agate/settings/secret/*
+!agate/settings/secret/README-secret.md
+# personal workflow files kept locally only
+agate/workflows/*
+!agate/workflows/README-workflow.md
+
+
+# CONFIG FILES #
+################
+#*.cnf
+!basestation_example.cnf
+!agate_config_example.cnf
+!pmarConvert_example.cnf
+!wisprConvert_example.cnf
+
 
 # MATLAB #
 ##########
 *.asv
 *.mat
 # configuration files
-*.cnf
-!basestation_example.cnf
-!agate_config_example.cnf
-!pmarConvert_example.cnf
-!wisprConvert_example.cnf
 
 
 # R STUFF # 
@@ -24,8 +35,8 @@ agate/settings/secret
 .Ruserdata
 /.quarto/
 /_site/
-
-
+*.rda
+*.rdata
 
 
 # Packages #

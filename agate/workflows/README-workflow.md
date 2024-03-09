@@ -1,0 +1,1 @@
+This folder is ignored by GitHub. Any files stored here will ONLY be kept locally and will not be uploaded to GitHub.com, but they will not be under version control. 
