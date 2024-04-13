@@ -1,5 +1,5 @@
 function val = parseLogToBreak(x, string)
-%PARSELOGTOBREAK   Parse a value from the log from strink to line break
+%PARSELOGTOBREAK   Parse a value from the log from string to line break
 %
 %   Syntax:
 %       val = PARSELOGTOBREAK(x, string)

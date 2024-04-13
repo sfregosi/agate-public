@@ -2,7 +2,7 @@ function [targets, targetsFile] = readTargetsFile(CONFIG, targetsFile)
 %READTARGETSFILE Read in Seaglider formatted targets file
 %
 %   Syntax:
-%       targets = TREADTARGETSFILE(targetsFile)
+%       TARGETS = TREADTARGETSFILE(CONFIG, TARGETSFILE)
 %
 %   Description:
 %       Read in a Seaglider formatted targets file to a table variable. 
@@ -13,7 +13,8 @@ function [targets, targetsFile] = readTargetsFile(CONFIG, targetsFile)
 %       CONFIG       global CONFIG variable from agate mission
 %                    configuration file loaded with agate initialization
 %       targetsFile  fullfile path and name to Seaglider formatted
-%		             targets file to be read
+%		             targets file to be read in Optional - if not specified
+%		             will prompt to select correct file
 %
 %   Outputs:
 %       targets      table with waypoint names, latitudes, and
@@ -28,13 +29,13 @@ function [targets, targetsFile] = readTargetsFile(CONFIG, targetsFile)
 %       S. Fregosi <selene.fregosi@gmail.com> <https://github.com/sfregosi>
 %
 %   FirstVersion:   unkonwn
-%   Updated:        25 April 2023
+%   Updated:        14 March 2024
 %
 %   Created with MATLAB ver.: 9.9.0.1524771 (R2020b) Update 2
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if nargin < 2
-    [fileName, filePath] = uigetfile([CONFIG.path.mission, '*.*'], ...
+    [fileName, filePath] = uigetfile([CONFIG.path.mission, '\*.*'], ...
         'Select targets file to read');
     targetsFile = fullfile(filePath, fileName);
     fprintf('targets file selected: %s\n', fileName);

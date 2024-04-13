@@ -21,87 +21,52 @@
 %		S. Fregosi <selene.fregosi@gmail.com> <https://github.com/sfregosi>
 %
 %	FirstVersion: 	21 April 2023
-%	Updated:        11 April 2024
+%	Updated:        09 March 2024
 %
-%	Created with MATLAB ver.: 9.13.0.2166757 (R2022b) Update 4
+%    Created with MATLAB ver.: 9.13.0.2166757 (R2022b) Update 4
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize agate
-agate agate_mission_config.cnf % or just agate and select file
+agate secret/agate_config_sg639_MHI_Apr2023.cnf
 global CONFIG
 
 %% extract positional data
-% This step can take some time to process through all .nc files
-
 [gpsSurfT, locCalcT] = extractPositionalData(CONFIG, 1);
 % 0 in plotOn argument will not plot 'check' figures, but change to 1 to
 % plot basic figures for output checking
 
 % save as .mat and .csv
 save(fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.mat']), 'gpsSurfT');
+    [CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.mat']), 'gpsSurfT');
 writetable(gpsSurfT,fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.csv']))
+    [CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.csv']))
 
 save(fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']),'locCalcT');
+    [CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']),'locCalcT');
 writetable(locCalcT, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_locCalcT.csv']));
+    [CONFIG.glider, '_', CONFIG.mission, '_locCalcT.csv']));
 
-%% save positional data for packaging for NCEI
+%% load previously extracted positional data
 
-% gps surface table
-if ~exist('gpsSurfT', 'var')
-	load(fullfile(CONFIG.path.mission, 'profiles', ...
-		[CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.mat']));
-end
-keepCols = {'dive', 'startDateTime', 'startLatitude', 'startLongitude', ...
-	'endDateTime', 'endLatitude', 'endLongitude'};
-gpsSurfSimp = gpsSurfT(:,keepCols);
-newNames = {'DiveNumber', 'StartDateTime_UTC', 'StartLatitude', 'StartLongitude', ...
-	'EndDateTime_UTC', 'EndLatitude', 'EndLongitude'};
-gpsSurfSimp.Properties.VariableNames = newNames;
-writetable(gpsSurfSimp, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_GPSSurfaceTableSimple.csv']))
-
-% location table
-if ~exist('locCalcT', 'var')
-	load(fullfile(CONFIG.path.mission, 'profiles', ...
-		[CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']))
-end
-keepCols = {'dateTime', 'latitude', 'longitude', 'depth', 'dive'};
-locCalcSimp = locCalcT(:,keepCols);
-newNames = {'DateTime_UTC', 'Latitude', 'Longitude', 'Depth_m', 'DiveNumber'};
-locCalcSimp.Properties.VariableNames = newNames;
-writetable(locCalcSimp, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_CalculatedLocationTableSimple.csv']))
-
-% environmental data
-if ~exist('locCalcT', 'var')
-	load(fullfile(CONFIG.path.mission, 'profiles', ...
-		[CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']))
-end
-keepCols = {'dive', 'dateTime', 'latitude', 'longitude', 'depth', ...
-	'temperature', 'salinity', 'soundVelocity', 'density'};
-locCalcEnv = locCalcT(:,keepCols);
-newNames = {'DiveNumber', 'DateTime_UTC', 'Latitude', 'Longitude', 'Depth_m', ...
-	'Temperature_C', 'Salinity_PSU', 'SoundSpeed_m_s', 'Density_kg_m3', };
-locCalcEnv.Properties.VariableNames = newNames;
-writetable(locCalcEnv, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_CTD.csv']))
-
-%% plot sound speed profile
 % load locCalcT if not already loaded
 if ~exist('locCalcT', 'var')
-	load(fullfile(CONFIG.path.mission, 'profiles', ...
-		[CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']))
+    load(fullfile(CONFIG.path.mission, 'profiles', ...
+        [CONFIG.glider, '_', CONFIG.mission, '_locCalcT.mat']))
 end
 
+% load gpsSurfT if not already loaded
+if ~exist('gpsSurfT', 'var')
+    load(fullfile(CONFIG.path.mission, 'profiles', ...
+        [CONFIG.glider, '_', CONFIG.mission, '_gpsSurfaceTable.mat']))
+end
+%% plot sound speed profile
+
 plotSoundSpeedProfile(CONFIG, locCalcT);
+% save as .png and .pdf
 exportgraphics(gcf, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_SSP.png']))
+    [CONFIG.glider, '_', CONFIG.mission, '_SSP.png']))
 exportgraphics(gcf, fullfile(CONFIG.path.mission, 'profiles', ...
-	[CONFIG.glider, '_', CONFIG.mission, '_SSP.pdf']))
+    [CONFIG.glider, '_', CONFIG.mission, '_SSP.pdf']))
 
 %% BELOW SECTIONS ARE NOT YET OPERATIONAL
 % Below called functions are in the 'drafts' folder and need to be adapted
@@ -114,25 +79,26 @@ exportgraphics(gcf, fullfile(CONFIG.path.mission, 'profiles', ...
 
 % % this looks at each recorded file timestamp to populate a 'pam' column
 % % that is added to locCalcT and gpsSurfT that specifies the status of the
-% % pam system for each entry.
-%
+% % pam system for each entry. 
+% 
 % fileLength = 600; % in seconds
 % dateFormat = 'yyMMdd-HHmmss';
 % dateStart = 1; % what part of file name starts the date format
-%
+% 
 % [gpsSurfT, locCalcT, pam] = extractPAMStatusByFile(gldr, lctn, dplymnt, ...
 %     fileLength, dateFormat, dateStart, gpsSurfT, locCalcT);
 % % saved automatically gpsSurfTable_pam.mat and locCalcT_pam.mat and
 % % _pamByFile.mat
 
+[gpsSurfT, locCalcT, pam] = extractPAMStatusByFile(CONFIG, gpsSurfT, locCalcT);
 
 %% extract positional data for each sound file
-%
+% 
 % secs = 180;
-%
+% 
 % filePosits = extractPositsPerPAMFile(gldr, lctn, dplymnt, ...
 %     pam, locCalcT,secs, path_profiles);
-%
+% 
 % % this saves _pamFilePosits.mat and .csv
 
 %% extract positional data and acoustic effort by minute
@@ -142,6 +108,6 @@ exportgraphics(gcf, fullfile(CONFIG.path.mission, 'profiles', ...
 % [pamByMin, pamMinPerHour, pamMinPerDay] = ...
 %     calcPAMEffort(gldr, lctn, dplymnt, expLimits, gpsSurfT, path_profiles);
 % % this saves _pamByMin.mat
-%
-%
+% 
+% 
 

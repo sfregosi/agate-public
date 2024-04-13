@@ -1,5 +1,8 @@
 function checkPath
 %CHECKPATH	Check the necessasry folders are there and on the path
+%						**********************			
+%                       ******DEPRECATED******
+%						**********************
 %
 %   Syntax:
 %       CHECKPATH
@@ -8,6 +11,10 @@ function checkPath
 %       Called from the agate initialization. Sets up the necessary paths 
 %       in the CONFIG variable, while checking that all needed subfolders 
 %       are present and on the path. If not, it makes them. 
+%
+%       ****NOTE: THIS HAS BEEN MOVED TO A NESTED FUNCTION IN AGATE.M TO
+%       REMOVE REQUIREMENT TO MANUALLY SET PATH IF AGATE IS FIRST
+%       INITIALIZED FROM THE AGATE-PUBLIC/AGATE FOLDER****
 %
 %   Inputs:
 %       none
@@ -29,7 +36,7 @@ function checkPath
 %           https://github.com/MarineBioAcousticsRC/Triton/
 %
 %   FirstVersion:   06 April 2023
-%   Updated:        04 March 2024
+%   Updated:        09 March 2024
 %
 %   Created with MATLAB ver.: 9.13.0.2166757 (R2022b) Update 4
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,17 +50,17 @@ CONFIG.path.agate = fileparts(which('agate'));
 CONFIG.path.utils = fullfile(CONFIG.path.agate, 'utils');
 addpath(genpath(CONFIG.path.utils));
 
-% make sure processAcoustics is on path
-CONFIG.path.processAcoustics = fullfile(CONFIG.path.agate, 'processAcoustics');
-addpath(genpath(CONFIG.path.processAcoustics));
+% make sure convertAcoustics is on path
+CONFIG.path.convertAcoustics = fullfile(CONFIG.path.agate, 'convertAcoustics');
+addpath(genpath(CONFIG.path.convertAcoustics));
 
 % check/create settings folder
 CONFIG.path.settings = fullfile(CONFIG.path.agate,'settings');
 if ~exist(CONFIG.path.settings, 'dir')
-    disp(' ')
-    disp('Settings directory is missing, creating it ...')
-    mkdir(CONFIG.path.settings);
-    addpath(CONFIG.path.settings); % no genpath will not add subdirs
+	disp(' ')
+	disp('Settings directory is missing, creating it ...')
+	mkdir(CONFIG.path.settings);
 end
+addpath(genpath(CONFIG.path.settings)); % no genpath will not add subdirs
 
 end

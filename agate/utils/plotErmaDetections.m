@@ -15,9 +15,10 @@ function plotErmaDetections(CONFIG, path_bsLocal, divenum)
 %       don't have that uploading correctly yet.
 %
 %   Inputs:
-%       CONFIG         [struct] Seaglider configuration info
-%       path_bsLocal   [string] directory where basestation files have been downloaded to
-%       divenum        [scalar] dive number (or NaN) to plot click info for
+%       CONFIG         [struct] Mission/agate global configuration variable
+%       path_bsLocal   [string] Directory where basestation files have been 
+%                      downloaded to
+%       divenum        [scalar] Dive number (or NaN) to plot click info for
 %
 %   Outputs: none (but creates/updates a figure)
 %

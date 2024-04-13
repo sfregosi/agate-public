@@ -19,6 +19,10 @@ CONFIG.tmd = XX; % target mission duration in days
 %                downloaded basestation and output files or will contain 
 %                downloaded and processed/produced files and figures
 CONFIG.path.mission = 'C:\Users\User.Name\Desktop\sgXXX_Location_Mon20XX\';
+% analysis path - optional path to an 'analysis' folder that would typically
+%                 contain the outputs of acoustic analyses (e.g., Pamguard
+%                 or Triton)
+CONFIG.path.analysis = 'C:\Users\User.Name\project\analysis';
 
 
 % %%%% OPTIONAL - basestation %%%%%%%%%%%%%%%
@@ -62,7 +66,7 @@ CONFIG.map.scaleMinor = [0:12.5:25];
 
 % general plotting settings
 % pre allocate fig numbers so figures are updated rather than created new
-CONFIG.plots.figSeed = 639;
+CONFIG.plots.figSeed = 111; % suggest using the glider serial e.g., 639
 CONFIG.plots.figNumList = CONFIG.plots.figSeed + [0 1 2 3 4 5 6 7 8 9]; 
 % figNumList (1) = battery, (2) = voltagePackUse, (3) = humidity
 % and pressure, (4) = map, (5) = zoomed map, (6) = minimum voltage, 

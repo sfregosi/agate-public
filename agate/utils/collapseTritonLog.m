@@ -17,7 +17,7 @@ function [tl, tlm] = collapseTritonLog(logFile, eventGap)
 %       logFile    [string] fullpath filename to log to be processed. If no
 %                  file is specified (no arguments) or is empty, or is
 %                  incorrect, will prompt to select
-%       eventGap   [integer] optional argument to combine events with the 
+%       eventGap   [integer] optional argument to combine events with the
 %                  same species ID code that are separated by less than the
 %                  integer specified by eventGap
 %
@@ -34,7 +34,7 @@ function [tl, tlm] = collapseTritonLog(logFile, eventGap)
 %       S. Fregosi <selene.fregosi@gmail.com> <https://github.com/sfregosi>
 %
 %	FirstVersion:   15 February 2023
-%	Updated:        6 June 2023
+%	Updated:        13 March 2024
 %
 %	Created with MATLAB ver.: 9.9.0.1524771 (R2020b) Update 2
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,14 +49,16 @@ end
 
 % agate CONFIG is not required, but if it is present, it will be used in
 % file search path if needed
-if exist('CONFIG', 'var')
-	searchPath = CONIFG.path.mission;
+if ismember('CONFIG', who('global'))
+	global CONFIG
+	searchPath = CONFIG.path.mission;
 else
 	searchPath = cd;
 end
 % check file exists and if not prompt to select
 if ~exist(logFile, 'file')
-	[file, path] = uigetfile(fullfile(searchPath, '*.xlsx;*.xls'), 'Select Triton log file');
+	[file, path] = uigetfile(fullfile(searchPath, '*.xlsx;*.xls'), ...
+		'Select Triton log file');
 	logFile = fullfile(path, file);
 end
 
@@ -98,9 +100,9 @@ for f = 1:height(tl)
 	tl.call{f} = t.Call(ic == f);
 end
 
-fprintf(1, ['No event merging: %i unqiue species, %i unique call types,' ...
+fprintf(1, ['Before event merging: %i unique species, %i unique call types,' ...
 	' %i unique events\n'], length(uSp), length(uCall), height(tl))
-  
+
 % merge by eventGap if non-zero
 tlt = tl; % make a copy to modify in the below loop
 tlm = table;
@@ -116,122 +118,180 @@ if eventGap > 0
 		stopYes = find(isbetween(tlt.stop, startPlus, stopPlus));
 		stopYes = stopYes(stopYes ~= tlmIdx); % ignore actual event
 
+
 		% do stuff depending on outcome
 
-		% if no overlaps
+		% classify overlap type for processing below
+
+		% simple - no matches
 		if isempty(startYes) && isempty(stopYes)
+			% check that its not completly within a
+			type = 'simple';
+
+			% some matches to deal with
+		elseif ~isempty(startYes) || ~isempty(stopYes)
+
+			if ~isempty(startYes) && isempty(stopYes)
+				type = 'startOverlap';
+				% just first one (in case multiple matches)
+				yesIdx = startYes(1);
+
+			elseif isempty(startYes) && ~isempty(stopYes)
+				type = 'stopOverlap';
+				% just first one (in case multiple matches)
+				yesIdx = stopYes(1);
+
+				% both contain overlaps
+			elseif ~isempty(startYes) && ~isempty(stopYes)
+				% find the smallest overlap comparison
+				startMin = min(startYes);
+				stopMin = min(stopYes);
+
+				% see if any are completely within the test event by
+				% any start and stop pairs
+				% 				if any(find(startYes == stopYes))
+				if (startMin == stopMin)
+					type = 'within';
+					yesIdx = startMin;
+					% 					% find the tlt index of the 'within' event
+					% 					fIdx = find(startYes == stopYes, 1, 'first');
+					% 					if length(fIdx) > 1
+					% 						fprintf('New situation. See eventNums %i. Will pause\n', ...
+					% 							tlt.eventNum(fIdx));
+					% 						pause;
+					% 					end
+					% get the yesIdx from whichever is longer
+					% 					if length(startYes) >= length(stopYes)
+					% 						yesIdx = startYes(fIdx);
+					% 					elseif length(stopYes) > length(startYes)
+					% 						yesIdx = stopYes(fIdx);
+					% 					end
+
+				else % no identical matches
+					type = 'bothOverlap';
+					% 					% find the smallest overlap comparison
+					% 					startMin = min(startYes);
+					% 					stopMin = min(stopYes);
+					% 					if length(startYes) == 1 && length(stopYes) == 1
+					% find which is smaller and start with that one
+					if startMin < stopMin
+						type = 'startOverlap';
+						yesIdx = min(startYes);
+					elseif stopMin < startMin
+						type = 'stopOverlap';
+						yesIdx = min(stopYes);
+					end
+					fprintf(1, 'Multiple overlaps, starting with earlier one, %i, %s\n', ...
+						min([startYes; stopYes]), type);
+					% 					else
+					% 						fprintf(1, 'New situation. See eventNums %i. Will pause\n', ...
+					% 							unique([startYes; stopYes]));
+					% 						pause;
+					% 					end
+				end % bothOverlap, check for 'within'
+			end
+		end % end simple vs some matches check
+
+
+		% operate on the type
+		if strcmp(type, 'simple')
 			% just copy this entry to output
 			tlm(tlmIdx,:) = tlt(tlmIdx, :);
-			tlmIdx = tlmIdx + 1;
+			advance = true;
 
-			% single overlap entries
-		elseif length(startYes) == 1 && length(stopYes) == 1
-			% and the single matches are identical meaning whole entry is
-			% within buffer
-			type = 'within';
-			if startYes == stopYes
-				% copy this entry to tlm
-				tlm(tlmIdx,:) = tlt(tlmIdx, :);
-				% double check that match doesn't start or end within
-				% buffer (rather than actual entry)
-				if tlt.start(startYes) < tlm.start(tlmIdx)
-					tlm.start(tlmIdx) = tlt.start(startYes);
-				end
-				if tlt.stop(stopYes) > tlm.stop(tlmIdx)
-					tlm.stop(tlmIdx) = tlt.stop(stopYes);
-				end
-				% remove the nested entry
-				tlt(startYes,:) = [];
-				tlmIdx = tlmIdx + 1;
+		elseif strcmp(type, 'startOverlap')
+			% start stuff
+			% copy this entry to tlm
+			tlm(tlmIdx,:) = tlt(tlmIdx, :);
+			% check where the overlap happens
+			if tlt.start(yesIdx) > tlm.stop(tlmIdx)
+				% next entry starts before end of this entry
+				% so replace end time with end time of next entry
+				tlm.stop(tlmIdx) = tlt.stop(yesIdx);
+				tlm.call{tlmIdx} = unique([tlt.call{tlmIdx}(:);
+					tlt.call{yesIdx}(:)]);
 			end
+			% remove the overlapping entry
+			tlt(yesIdx,:) = [];
+			% update tlt to match tlm
+			tlt(tlmIdx,:) = tlm(tlmIdx,:);
+			% 			advance = true; % advance, unless multi match below
 
-			% overlap only on start
-		elseif  isempty(stopYes) && ~isempty(startYes)
-			% single overlap
-			if length(startYes) == 1
-				% copy this entry to tlm
-				tlm(tlmIdx,:) = tlt(tlmIdx, :);
-				% check where the overlap happens
-				if tlt.start(startYes) > tlm.stop(tlmIdx)
-					% next entry starts before end of this entry
-					% so replace end time with end time of next entry
-					tlm.stop(tlmIdx) = tlt.stop(startYes);
-					tlm.call{tlmIdx} = unique([tlt.call{tlmIdx}(:);
-						tlt.call{startYes}(:)]);
-				end
-				% remove the overlapping entry and update tlt to match tlm
-				tlt(startYes,:) = [];
-				tlt(tlmIdx,:) = tlm(tlmIdx,:);
-				tlmIdx = tlmIdx + 1;
-			elseif length(startYes) > 1
-				fprintf('more than 1 overlap! See eventNums %i to %i\n', ...
-					startYes(1), startYes(end))
-				pause
-			end
+		elseif strcmp(type, 'stopOverlap')
+			% stop stuff
+			% don't need to recopy the test entry, going to modify existing
 
-			% overlap only on stop
-		elseif isempty(startYes) && ~isempty(stopYes)
-			% single overlap
-			if length(stopYes) == 1
-				if stopYes < tlmIdx && tlm.stop(stopYes) < tlt.stop(tlmIdx)
-					% entry before previous entry ends before start or within
-					% buffer of this entry so update previous entry end time
-					tlm.stop(stopYes) = tlt.stop(tlmIdx);
-					tlm.call{stopYes} = unique([tlt.call{stopYes}(:);
-						tlt.call{tlmIdx}(:)]);
-					% remove overlapping entry, update tlt, do NOT advance
-					tlt(tlmIdx,:) = [];
-					tlt(stopYes,:) = tlm(stopYes,:);
-				end
-			elseif length(stopYes) > 1
-				fprintf('more than 1 overlap! See eventNums %i to %i\n', ...
-					stopYes(1), stopYes(end))
-				pause
-			end
-		elseif length(startYes) > 1 && length(stopYes) > 1
-			fprintf('more than 1 overlap for start and stop!\n')
-			pause
-		elseif length(startYes) > 1 || length(stopYes) > 1
-			% are any startYes and stopYes identical?
-			if length(find(startYes == stopYes)) == 1
-				type = 'within';
-				fIdx = find(startYes == stopYes);
-				if length(startYes) > length(stopYes)
-					yesIdx = startYes(fIdx);
-				elseif length(stopYes) > length(startYes)
-					yesIdx = stopYes(fIdx);
-				end
-				% copy this entry to tlm
-				tlm(tlmIdx,:) = tlt(tlmIdx, :);
-				% double check that match doesn't start or end within
-				% buffer (rather than actual entry)
-				if tlt.start(yesIdx) < tlm.start(tlmIdx)
-					tlm.start(tlmIdx) = tlt.start(yesIdx);
-				end
-				if tlt.stop(yesIdx) > tlm.stop(tlmIdx)
-					tlm.stop(tlmIdx) = tlt.stop(yesIdx);
-				end
-				% remove the nested entry
-				tlt(yesIdx,:) = [];
-% 				tlmIdx = tlmIdx + 1; don't update to revisit multiples
-
-			elseif length(find(startYes == stopYes)) > 1
-				fprintf('multiple within events!\n')
-				pause
+			if yesIdx < tlmIdx && tlm.stop(yesIdx) < tlt.stop(tlmIdx)
+				% match is previous entry AND previous entry ends before
+				% start or within buffer so update previous stop time
+				tlm.stop(yesIdx) = tlt.stop(tlmIdx);
+				tlm.call{yesIdx} = unique([tlt.call{yesIdx}(:);
+					tlt.call{tlmIdx}(:)]);
+			elseif yesIdx < tlmIdx && tlm.stop(yesIdx) >= tlt.stop(tlmIdx)
+				% match is previous entry AND previous entry ends AFTER so
+				% this becomes 'within' and just update call type
+				tlm.call{yesIdx} = unique([tlt.call{yesIdx}(:);
+					tlt.call{tlmIdx}(:)]);
 			else
-				fprintf('more than 1 overlap in either start or stop!\n')
-				pause
+				fprintf('New situation. See eventNum %i. Will pause\n', ...
+					tlt.eventNum(yesIdx));
+				pause;
 			end
+			tlt(tlmIdx,:) = [];
+			tlt(yesIdx,:) = tlm(yesIdx,:);
+			advance = false; % never advance
 
+
+		elseif strcmp(type, 'within')
+			% copy the test entry to tlm
+			tlm(tlmIdx,:) = tlt(tlmIdx, :);
+			% double check that 'within'doesn't start or end within
+			% buffer (rather than actual entry). If it does, update
+			if tlt.start(yesIdx) < tlm.start(tlmIdx)
+				tlm.start(tlmIdx) = tlt.start(yesIdx);
+			end
+			if tlt.stop(yesIdx) > tlm.stop(tlmIdx)
+				tlm.stop(tlmIdx) = tlt.stop(yesIdx);
+			end
+			% update call types if needed
+			tlm.call{tlmIdx} = unique([tlt.call{tlmIdx}(:);
+				tlt.call{yesIdx}(:)]);
+			% remove the nested entry
+			tlt(yesIdx,:) = [];
+			% update tlt to match tlm
+			tlt(tlmIdx,:) = tlm(tlmIdx,:);
+			% 			advance = true; % advance, unless multi match below
+
+		elseif strcmp(type, 'bothOverlap')
+			fprintf('Type: bothOverlap...need to resolve. Will pause\n');
+			pause;
+
+		end % process depending on type
+
+		% if length > 1, change advance to false
+		if length(startYes) > 1 || length(stopYes) > 1
+			advance = false;
 		end
-	end
+		if length(unique([startYes; stopYes])) > 1
+			advance = false;
+		end
 
-	fprintf(1, ['Events merged within %i minutes: %i unqiue species, ' ...
-		'%i unique call types, %i unique events\n'], ...
-		eventGap, length(uSp), length(uCall), height(tlm))
+		if advance == true
+			tlmIdx = tlmIdx + 1;
+		elseif advance == false
+			fprintf(1, 'reassessing eventNum %i...\n', tlmIdx);
+		end
 
-end
+	end % while event rows exist
+
+end % if eventGap > 0
+
+
+fprintf(1, ['Events merged within %i minutes: %i unique species, ' ...
+	'%i unique call types, %i unique events\n'], ...
+	eventGap, length(uSp), length(uCall), height(tlm))
+
+end % function end
 
 
 
-end

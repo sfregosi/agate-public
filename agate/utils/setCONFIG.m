@@ -27,7 +27,7 @@ function setCONFIG(missionCnf)
 %           https://github.com/MarineBioAcousticsRC/Triton/
 %
 %   FirstVersion: 	06 April 2023
-%   Updated:        04 March 2024
+%   Updated:        11 April 2024
 %
 %   Created with MATLAB ver.: 9.13.0.2166757 (R2022b) Update 4
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,6 +53,7 @@ if isempty(CONFIG.missionCnf)
 	[name, path] = uigetfile([CONFIG.path.settings, '\*.cnf'], ...
 		'Select configuration file');
 	CONFIG.missionCnf = fullfile(path, name);
+	fprintf(1, 'Mission configuration file:\n      %s\n', CONFIG.missionCnf);
 else
 	% check if full file or just parts
 	[path, ~, ~] = fileparts(CONFIG.missionCnf);
@@ -72,6 +73,7 @@ else
 end
 CONFIG.path.cnfFid = fopen(CONFIG.missionCnf,'r');
 parseCnf(CONFIG.missionCnf);
+CONFIG.gmStr = [CONFIG.glider '_' CONFIG.mission];
 
 % if basestation 'bs' configurations exist
 if isfield(CONFIG, 'bs')

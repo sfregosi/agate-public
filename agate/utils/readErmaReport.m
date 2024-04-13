@@ -9,7 +9,7 @@ function s = readErmaReport(filename)
 %       the ErmaMain C code and then uploaded from the glider, unzipped, 
 %       and cleaned up.
 %
-%       Note that enc.t_D doesn't necessarily have all nClicks times in the
+%       enc.t_D doesn't necessarily have all nClicks times in the
 %       encounter, just all the click times that got uploaded. Some can get
 %       omitted from the upload because of space limitations. But the total
 %       click count enc.nClicks includes both the uploaded ones and the 
