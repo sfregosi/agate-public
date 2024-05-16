@@ -37,12 +37,13 @@ logFile = fullfile(CONFIG.path.analysis, 'triton', 'wood', ...
 	[CONFIG.gmStr '_recheck_mw'], logFileName);
 eventGap = 15;
 [tl, tlm] = collapseTritonLog(logFile, eventGap);
-% save as .mat and .csv
-save(fullfile(CONFIG.path.analysis, 'triton', 'wood', ...
+% save as .mat
+save(fullfile(CONFIG.path.analysis, 'triton', 'merged_logs', ...
 	[CONFIG.gmStr '_log_merged.mat']), 'tl', 'tlm');
-writetable(tlm, fullfile(CONFIG.path.analysis, 'triton', 'wood', ...
+% simplify for banter and add glider to eventID string
+tls = tritonLogToEventLog(CONFIG, tlm);
+writetable(tls, fullfile(CONFIG.path.analysis, 'triton', 'merged_logs', ...
 	[CONFIG.gmStr '_log_merged.csv']));
-
 
 
 %% (1) Plot encounter on map
